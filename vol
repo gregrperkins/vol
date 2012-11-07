@@ -1,0 +1,58 @@
+#!/bin/bash
+
+if [ "`uname -s`" != "Darwin" ]; then echo "Only for OS X."; exit 1; fi
+
+_get_volume () {
+  CURRENT=$(sudo osascript -e 'output volume of (get volume settings)')
+}
+
+_set_volume () {
+  sudo osascript -e "set volume output volume $1" # debug
+}
+_incr () {
+  _set_volume $(((CURRENT + 2)))
+}
+_decr () {
+  _set_volume $(((CURRENT - 2)))
+}
+_mute () {
+  _set_volume 0
+}
+
+_print_volume () {
+  printf "\rVolume: %3d [" $CURRENT
+  for ((cur = 1; cur <= 50; cur += 1)); do
+    if ((cur < $CURRENT / 2)); then
+      printf "="
+    else
+      printf "-"
+    fi
+  done
+  printf "] j- k+ m0 1..9 q  \r"
+}
+
+while true; do
+  _get_volume
+  _print_volume
+  # silent, 1 character only, 1 second timeout
+  read -s -n 1 -t 1 INPUT
+  case $INPUT in
+    k|-|_)
+      _incr
+      ;;
+    j|=|+)
+      _decr
+      ;;
+    0|m)
+      _mute
+      ;;
+    [1-9])
+      _set_volume $((INPUT * 10))
+      ;;
+    q)
+      printf "\n"
+      exit 0
+      ;;
+  esac
+  unset INPUT
+done
